@@ -24,8 +24,8 @@
 
 # 负载均衡源码分析
 
-[负载均衡源码分析](source_code_lb.md)
+[负载均衡源码分析](doc/source_code_lb.md)
 
 # 服务注册与发现源码分析
 
-[服务注册与发现源码分析](source_code_nacos_discovery.md)
+[服务注册与发现源码分析](doc/source_code_nacos_discovery.md)
