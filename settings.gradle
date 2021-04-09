@@ -1,0 +1,5 @@
+rootProject.name = 'hello-nacos-discovery'
+
+include("service-registration")
+include 'service-discovery'
+

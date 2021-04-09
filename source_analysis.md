@@ -1,0 +1,45 @@
+# LoadBalance源码分析
+
+## http服务的负载均衡
+
+1. spring提供了两个类访问远程http服务，同步请求用RestTemplate，异步请求用WebClient.Builder。
+2. RestTemplate包含一组ClientHttpRequestInterceptor，LoadBalancerInterceptor实现了这个Interceptor来完成负载均衡。
+3. DefaultWebClientBuilder包含一组ExchangeFilterFunction,ReactorLoadBalancerExchangeFilterFunction实现了这个Filter来完成负载均衡。
+
+下面分析下WebClient.Builder的负载均衡实现，RestTemplate的负载均衡实现类似。
+
+## @Loadbalanced对WebClient.Builder的作用
+
+1. spring-cloud-commons项目 /META-INF/spring.factories定义自动装配类org.springframework.cloud.client.loadbalancer.reactive.LoadBalancerBeanPostProcessorAutoConfiguration
+2. LoadBalancerBeanPostProcessorAutoConfiguration在bean WebClient.Builder构造好之后，判断bean是否有@Loadbalanced注解，如果有，注入LoadBalancerExchangeFilterFunction。
+
+## LoadBalancerExchangeFilterFunction的构造
+
+1. spring-cloud-loadbalancer项目 /META-INF/spring.factories定义自动装配类org.springframework.cloud.loadbalancer.config.LoadBalancerAutoConfiguration。
+2. LoadBalancerAutoConfiguration中装配LoadBalancerClientFactory。
+3. spring-cloud-commons项目 /META-INF/spring.factories定义自动装配类org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerClientAutoConfiguration。
+4. ReactorLoadBalancerClientAutoConfiguration中装配ReactorLoadBalancerExchangeFilterFunction，装配条件是存在实现了ReactiveLoadBalancer.Factory接口的bean，也就是LoadBalancerClientFactory。
+
+## ReactorLoadBalancerExchangeFilterFunction的工作原理
+
+1. 通过ReactiveLoadBalancer.Factory选择一个服务实例ServiceInstance
+2. buildClientRequest()中调用LoadBalancerUriTools.reconstructURI(serviceInstance, originalUrl)，替换原始链接中请求的地址。
+3. ReactiveLoadBalancer.Factory的实现类是LoadBalancerClientFactory，由LoadBalancerAutoConfiguration装配。
+
+## LoadBalancerClientFactory如何获取服务实例
+1. 调用getInstance()获取服务实例，为每一组服务实例（通过name确定）创建一个新的ApplicationContext。
+2. ApplicationContext注入一系列的Configuration，其中包括LoadBalancerClientConfiguration。
+3. LoadBalancerClientConfiguration在spring.cloud.discovery.enabled=true的条件下生效。
+4. LoadBalancerClientConfiguration默认构造负载均衡类RoundRobinLoadBalancer，服务实例由ServiceInstanceListSupplier提供。
+5. LoadBalancerClientConfiguration也负责ServiceInstanceListSupplier实现类的构造，参考discoveryClientServiceInstanceListSupplier()。
+
+## ServiceInstanceListSupplier的实现
+
+1. DiscoveryClientServiceInstanceListSupplier通过DiscoveryClient获取服务实例，实现类为NacosDiscoveryClient。
+2. CachingServiceInstanceListSupplier实现了服务实例列表的缓存，通过CacheFlux实现异步调用的缓存。默认缓存35s，通过LoadBalancerCacheProperties ttl字段定义。
+
+## 其他
+
+1. @LoadBalanced注解作用，参考https://fangshixiang.blog.csdn.net/article/details/100890879 。
+2. ExchangeFilterFunction的andThen()的逻辑实现很有意思，最终封装成ExchangeFunction，参考DefaultWebClientBuilder.build()的实现。
+3. 可以不借助Nacos等服务注册与发现的产品测试@LoadBalanced，需要使用@LoadBalancerClient，提供自己的ServiceInstanceListSupplier。参考https://spring.io/guides/gs/spring-cloud-loadbalancer/ 。@LoadBalancerClient的解析在LoadBalancerClientFactory构造ApplicationContext的流程中。
