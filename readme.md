@@ -5,7 +5,7 @@
 
 # 测试方式
 
-环境：本地安装并启动nacos release版本2.0.0-bugfix，下载地址https://github.com/alibaba/nacos/releases。
+环境：本地安装并启动nacos release版本2.0.0-bugfix，下载地址https://github.com/alibaba/nacos/releases 。
 
 方法一：启动多个service-registration，通过命令行指定不同端口。启动service-discovery，访问localhost:8080/echo/test，会在多个service-registration之间轮询。
 
@@ -24,4 +24,8 @@
 
 # 负载均衡源码分析
 
-[负载均衡源码分析](source_analysis.md)
+[负载均衡源码分析](source_code_lb.md)
+
+# 服务注册与发现源码分析
+
+[服务注册与发现源码分析](source_code_nacos_discovery.md)

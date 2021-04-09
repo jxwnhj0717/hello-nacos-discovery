@@ -1,0 +1,8 @@
+# 服务注册与发现源码分析
+
+## SpringCloud接口与Nacos实现
+
+1. Nacos服务注册与发现使用同一接口NamingService，实现类为NacosNamingService。
+2. SpringCloud服务注册接口为ServiceRegistry、Registration、AbstractAutoServiceRegistration，Nacos都提供了对应的适配类，最终调用NacosNamingService实现服务注册。
+3. SpringCloud服务发现接口为DiscoveryClient，Nacos提供了对应的适配类，最终调用NacosNamingService实现服务发现。
+4. 
